@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const {v4: uuidv4} = require('uuid');
+const {Server} = require('socket.io');
 
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
@@ -67,7 +68,11 @@ mongoose
         'mongodb+srv://Aldoran:1q2w3e3e2w1q4r@cluster0.w7nfz.mongodb.net/nodejs_shop'
     )
     .then(result => {
-        app.listen(8080);
-        console.log('\x1b[36m', 'SUCCESSFULLY CONNECTED TO DATABASE AND STARTED SERVER ON PORT:8080');
+        const server = app.listen(8080);
+        const io = new Server(server);
+        io.on('connection', socket => {
+            console.log('\x1b[36m', `WEBSOCKET CLIENT CONNECTED ON SOCKET: ${socket}`);
+        });
+        console.log('\x1b[36m', 'SERVER SUCCESSFULLY CONNECTED TO DATABASE AND STARTED ON PORT:8080');
     })
     .catch(err => console.log(err));
