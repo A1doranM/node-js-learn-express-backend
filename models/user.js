@@ -15,8 +15,8 @@ const userSchema = new Schema({
         required: true
     },
     status: {
-        type: Object,
-        required: String
+        type: String,
+        required: false,
     },
     posts: [
         {
