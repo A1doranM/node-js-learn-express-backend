@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const {v4: uuidv4} = require('uuid');
-const {Server} = require('socket.io');
+const socket = require('./socket');
 
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
@@ -69,7 +69,7 @@ mongoose
     )
     .then(result => {
         const server = app.listen(8080);
-        const io = new Server(server);
+        const io = socket.init(server);
         io.on('connection', socket => {
             console.log('\x1b[36m', `WEBSOCKET CLIENT CONNECTED ON SOCKET: ${socket}`);
         });
