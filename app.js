@@ -4,11 +4,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const {graphqlHTTP} = require('express-graphql');
 const {v4: uuidv4} = require('uuid');
-const socket = require('./socket');
 
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 const app = express();
 
@@ -46,11 +46,33 @@ app.use((req, res, next) => {
         'OPTIONS, GET, POST, PUT, PATCH, DELETE'
     );
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
     next();
 });
 
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
+app.use(
+    '/graphql',
+    graphqlHTTP({
+        schema: graphqlSchema,
+        rootValue: graphqlResolver,
+        graphiql: true,
+        customFormatErrorFn(err) {
+            if (!err.originalError) {
+                return err;
+            }
+            const data = err.originalError.data;
+            const message = err.message || 'An error occured';
+            const code = err.originalError.code || 500;
+            return {
+                message: message,
+                status: code,
+                data: data
+            };
+        }
+    })
+);
 
 app.use((error, req, res, next) => {
     console.log(error);
@@ -65,14 +87,10 @@ app.use((error, req, res, next) => {
 
 mongoose
     .connect(
-        'mongodb+srv://Aldoran:1q2w3e3e2w1q4r@cluster0.w7nfz.mongodb.net/nodejs_shop'
+        'mongodb+srv://Aldoran:1q2w3e3e2w1q4r@cluster0.1pfmw.mongodb.net/node-js-express-graphql?retryWrites=true&w=majority'
     )
     .then(result => {
-        const server = app.listen(8080);
-        const io = socket.init(server);
-        io.on('connection', socket => {
-            console.log('\x1b[36m', `WEBSOCKET CLIENT CONNECTED ON SOCKET: ${socket}`);
-        });
+        app.listen(8080);
         console.log('\x1b[36m', 'SERVER SUCCESSFULLY CONNECTED TO DATABASE AND STARTED ON PORT:8080');
     })
     .catch(err => console.log(err));
