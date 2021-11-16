@@ -3,6 +3,7 @@ const validator = require('validator');
 
 const User = require('../models/user');
 const Post = require('../models/post');
+const jwt = require('jsonwebtoken');
 
 module.exports = {
     createUser: async function ({userInput}, req) {
@@ -104,11 +105,36 @@ module.exports = {
         });
         const createPost = await post.save();
         user.posts.push(createPost);
+        await user.save();
         return {
             ...createPost._doc,
             _id: createPost._id.toString(),
             createdAt: createPost.createdAt.toISOString(),
             updatedAt: createPost.updatedAt.toISOString()
         };
+    },
+    posts: async function (args, req) {
+        if (!req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+
+        const totalPosts = await Post.find().countDocuments();
+        const posts = await Post
+            .find()
+            .sort({createdAt: -1})
+            .populate('creator');
+        return {
+            posts: posts.map(post => {
+                return {
+                    ...post._doc,
+                    _id: post._id.toString(),
+                    createdAt: post.createdAt.toISOString(),
+                    updatedAt: post.updatedAt.toISOString()
+                }
+            }),
+            totalPosts: totalPosts
+        }
     }
 }
